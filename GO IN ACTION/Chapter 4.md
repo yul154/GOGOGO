@@ -107,7 +107,7 @@ slice := []int()
 
 ### 2. 使用
 
-1.赋值和切片
+赋值和切片
 ```
 slice := []int{10, 20, 30, 40, 50}
 slice[1] = 25
@@ -120,6 +120,94 @@ newSlice := slice[1:3]
 ```
 slice[i:j]
 length: j-i
-volumn: k-i // k is original slice volumn
+capacity: k-i // k is original slice capacity
 ```
 
+修改切片内容
+```
+slice := []int{1,2,3,4,5}
+newSlice ：= slice[1:3]
+newSlice[1] = 35 //slice的第3个元素也被修改了
+```
+切片增长
+```
+sl := []int{1, 2, 3, 4, 5}
+newSl := sl[1:3]
+newSl = append(newSl, 6)
+```
+如果切片的底层数组没有足够的可用容量，append 函数会创建一个新的底层数组，将被引用的现有的值复制到新数组里，再追加新的值
+
+> `append`会智能地处理底层数组的容量增长。在切片的容量小于1000个元素时，总是会成倍地增加容量.一旦元素个数超过 1000，容量的增长因子会设为 1.25，也就是会每次增加 25%
+
+三个索引
+```
+source := []string{"Apple", "Orange", "Plum", "Banana", "Grape"}
+slice := source[2:3:4] // start from 2, length is 3-2, capacity is 4-2
+```
+设置长度和容量一样的好处
+```
+source := []string{"Apple", "Orange", "Plum", "Banana", "Grape"}
+slice := source[2:3:3]
+slice = append(slice, "Kiwi") // 直接追加元素，并没有修改原数组
+```
+
+迭代切片
+```
+slice := []int{10, 20, 30, 40}
+for index, value := range slice {
+  fmt.Printf("Index: %d Value: %d\n", index, value)
+} 
+```
+
+多维切片
+> Go 语言里使用 append 函数处理追加的方式很简明：先增长切片，再将新的整型切片赋值 给外层切片的第一个元素
+```
+slice := [][]int{(10),(100,200)}
+slice[0] = append(slice[0], 20)
+```
+
+在函数间传递切片就是要在函数间以值的方式传递切片
+* 在 64 位架构的机器上，一个切片需要 24 字节的内存：指针字段需要 8 字节，长度和容量 字段分别需要 8 字节
+* 由于与切片关联的数据包含在底层数组里，不属于切片本身，所以将切片 复制到任意函数的时候，对底层数组大小都不会有影响
+* 复制时只会复制切片本身，不会涉及底层数组
+----
+# 映射的内部实现和基础功能
+> 存储一系列无序的键值对
+
+## 内部实现 
+> 映射是无序的集合，意味着没有办法预测键值对被返回的顺序。
+
+1. 映射的散列表包含一组桶
+2. 在存储、删除或者查找键值对的时候，所有操作都要先选择一个桶。
+3. 把操作映射时指定的键传给映射的散列函数，就能选中对应的桶
+4. 散列函数的目的是生成一个索引，这个索引最终将键值对分布到所有可用的桶里
+
+映射使用两个数据结构来存储数据
+1. 数组，内部存储的是用于选择桶的散列键的高八位值。这个数组用于区分每个键值对要存在哪个桶里。
+2. 数据结构是一个字节数组，用于存储键值对
+
+## 创建和初始化
+```
+dict := make(map[string]int)
+dict := map[string]string{"Red": "#da1337", "Orange": "#e95a22"} //创建映射时，更常用的方法是使用映射字面量
+```
+* 映射的键可以是任何值,可以是内置的类型，也可以是结构类型，只要这个值可以使用`==`运算符做比较
+```
+dict := map[int][]string{}
+```
+
+## 使用映射 
+```
+colors := map[string]string{}
+colors["Red"] = "#da1337"
+
+value, exists := colors["Blue"]
+if exists {
+  fmt.Println(value)
+} 
+delete(colors, "Coral")
+```
+
+## 在函数间传递映射
+
+在函数间传递映射并不会制造出该映射的一个副本。实际上，当传递映射给一个函数，并对这个映射做了修改时，所有对这个映射的引用都会察觉到这个修改
