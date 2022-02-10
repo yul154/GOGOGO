@@ -75,5 +75,77 @@ func main(){
 
 }
 ```
+----
+# 竞争状态
+> 两个或者多个`goroutine`在没有互相同步的情况下，访问某个共享的资源
 
 
+* 调用了`runtime`包的`Gosched`函数，用于将`goroutine`从当前线程退出
+
+```
+go build -race // 检测竞争标志
+```
+一种修正代码、消除竞争状态的办法是，使用 Go 语言提供的锁机制，来锁住共享资源，从而保证 goroutine 的同步状态
+----
+# 锁住共享资源
+
+## 原子函数
+```
+func main() {
+
+ wg.Add(2) // 创建两个 goroutine
+ go incCounter(1)
+ go incCounter(2)
+
+ wg.Wait()
+
+fmt.Println("Final Counter:", counter)
+}
+ func incCounter(id int) {
+  defer wg.Done()
+  for count := 0; count < 2; count++ {
+    atomic.AddInt64(&counter, 1) //原子操作
+    runtime.Gosched()
+    }
+ }
+```
+
+## 互斥锁
+```
+mutex.Lock()
+{
+
+   value := counter
+   runtime.Gosched()
+   value++
+   counter = value
+
+}
+mutex.Unlock()
+```
+
+## 通道
+
+当一个资源需要在 goroutine 之间共享时，通道在 goroutine 之间架起了一个管道，并提供了确保同步交换数据的机制
+
+```
+unbuffered := make(chan int)
+buffered := make(chan string, 10)
+buffered <- "Gopher"
+value := <-buffered
+```
+* 第一个参数需要是关键字 chan，
+* 之后跟着允许通道交换的数据的类型
+* 如果创建的是一个有缓冲的通道，之后还需要在第二个参数指定这个通道的缓冲区的大小
+* 向通道发送值或者指针需要用到`<-`操作符
+
+### 无缓冲的通道
+> 指在接收前没有能力保存任何值的通道
+
+* 这种类型的通道要求发送 goroutine 和接收 goroutine 同时准备好
+* 如果两个`goroutine`没有同时准备好，通道会导致先执行发送或接收操作的 goroutine 阻塞等待
+* 通道进行发送和接收的交互行为本身就是同步的
+
+```
+
+```
