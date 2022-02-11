@@ -147,5 +147,135 @@ value := <-buffered
 * 通道进行发送和接收的交互行为本身就是同步的
 
 ```
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func main() {
+	court := make(chan int)
+	wg.Add(2)
+
+	go player("a", court)
+	go player("b", court)
+
+	court <- 1
+	wg.Wait()
+
+}
+
+func player(name string, court chan int) {
+
+	defer wg.Done()
+
+	for {
+
+		ball, ok := <-court
+		if !ok {
+
+			fmt.Printf("Player %s Won\n", name)
+			return
+
+		}
+
+		n := rand.Intn(100)
+		fmt.Printf("%d\n", n)
+
+		if n%13 == 0 {
+
+			fmt.Printf("Player %s Miss \n", name)
+			close(court)
+			return
+		}
+
+		fmt.Printf("Player %s Hit %d\n", name, ball)
+		ball++
+		court <- ball
+
+	}
+
+}
 
 ```
+
+```
+package main
+import (
+    "fmt"
+    "sync"
+    "time"
+)
+// wg 用来等待程序结束
+var wg sync.WaitGroup
+// main 是所有Go 程序的入口
+func main() {
+    // 创建一个无缓冲的通道
+    baton := make(chan int)
+    // 为最后一位跑步者将计数加1
+    wg.Add(1)
+    // 第一位跑步者持有接力棒
+    go Runner(baton)
+    // 开始比赛
+    baton <- 1
+    // 等待比赛结束
+    wg.Wait()
+}
+// Runner 模拟接力比赛中的一位跑步者
+func Runner(baton chan int) {
+    var newRunner int
+    // 等待接力棒
+    runner := <-baton
+    // 开始绕着跑道跑步
+    fmt.Printf("Runner %d Running With Baton\n", runner)
+    // 创建下一位跑步者
+    if runner != 4 {
+        newRunner = runner + 1
+        fmt.Printf("Runner %d To The Line\n", newRunner)
+        go Runner(baton)
+    }
+    // 围绕跑道跑
+    time.Sleep(100 * time.Millisecond)
+    // 比赛结束了吗？
+    if runner == 4 {
+        fmt.Printf("Runner %d Finished, Race Over\n", runner)
+        wg.Done()
+        return
+    }
+    // 将接力棒交给下一位跑步者
+    fmt.Printf("Runner %d Exchange With Runner %d\n",
+        runner,
+        newRunner)
+    baton <- newRunner
+}
+```
+
+### 有缓冲的通道
+> 在被接收前能存储一个或者多个值的通道
+
+* 只有在通道中没有要接收的值时，接收动作才会阻塞
+* 只有在通道没有可用缓冲区容纳被发送的值时，发送动作才会阻塞。
+
+```
+
+```
+
+
+当通道关闭后，goroutine 依旧可以从通道接收数据，但是不能再向通道里发送数据
+* 这允许通道关闭后依旧能取出其中缓冲的全部值，而不会有数据丢失 
+
+> 为什么Go语言对通道要限制长度而不提供无限长度的通道？
+
+当提供数据一方的数据供给速度大于消费方的数据处理速度时，如果通道不限制长度，那么内存将不断膨胀直到应用崩溃
+* 限制通道的长度有利于约束数据提供方的供给速度
+* 供给数据量必须在消费方处理量+通道长度的范围内，才能正常地处理数据。
+
