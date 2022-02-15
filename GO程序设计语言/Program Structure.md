@@ -61,7 +61,7 @@ the type of name is determined by the type of expression.
 out, err := os.Create(outfile)
  ```
  
- A short variable declaration must declare at least one new variabl
+ A short variable declaration must declare at least one new variable
  ```
 f, err := os.Open(infile)
 // ...
@@ -73,7 +73,7 @@ A pointer value is the address of a variable.
 * Not every value has an address, but every variable does.
 * If a variable is declared var `x `int, the expression `&x` (‘‘address of x’’) yields a pointer to an integer variable, that is, a value of type *int,
 * The variable to which p points is written `*p`. The expression `*p` yields the value of that variable, an int, 
-* The zero value for a pointer of any type is nil.  The test p != nil is true if p points to a vari- able.
+* The zero value for a pointer of any type is nil.  The test p != nil is true if p points to a variable.
 * Pointers are comparable,two pointers are equal if and only if they point to the same variable or both are nil.
 
 ```
@@ -148,7 +148,11 @@ func f() {
 escapes from f
 * x must be heap-allocated because it is still reachable from the variable global after f has returned, despite being declared as a local variable; 
 
+-----
 ##  Assignments
+
+### 元组赋值
+
 
 
 
